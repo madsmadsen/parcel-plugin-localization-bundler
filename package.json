@@ -1,0 +1,28 @@
+{
+  "name": "parcel-plugin-localization-bundler",
+  "version": "0.1.0",
+  "description": "Bundles localization files into one per namespace and language.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madsmadsen/parcel-plugin-localization-bundler.git"
+  },
+  "author": "Mads Madsen <mads@onmadsen.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/madsmadsen/parcel-plugin-localization-bundler/issues"
+  },
+  "homepage": "https://github.com/madsmadsen/parcel-plugin-localization-bundler#readme",
+  "dependencies": {
+    "@parcel/logger": "1.11.0"
+  },
+  "devDependencies": {
+    "parcel-bundler": "1.11.0"
+  },
+  "peerDependencies": {
+    "parcel-bundler": "1.11.0"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  }
+}
