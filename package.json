@@ -1,6 +1,6 @@
 {
   "name": "parcel-plugin-localization-bundler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Bundles localization files into one per namespace and language.",
   "main": "index.js",
   "repository": {
