@@ -18,6 +18,10 @@ module.exports = class LocalizationJSONAsset extends Asset {
         this.type = 'js'
     }
 
+    shouldInvalidate() {
+        return true
+    }
+
     async collectDependencies() {
         const config = await getConfig(this.options.rootDir)
         const { language, namespace } = await getLanguageAndNamespace(this.name, this.options.rootDir)
