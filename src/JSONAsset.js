@@ -25,61 +25,90 @@ module.exports = class LocalizationJSONAsset extends Asset {
     async collectDependencies() {
         const config = await getConfig(this.options.rootDir)
         const { language, namespace } = await getLanguageAndNamespace(this.name, this.options.rootDir)
-        const translations = fs.readdirSync(
+        const translationFiles = this.deepFindTranslations(
             path.join(
                 this.options.rootDir,
                 config.sourcePath,
                 language,
                 namespace
-            ),
+            )
+        )
+
+        for (const translation of translationFiles) {
+            this.addDependency(
+                translation,
+                {
+                    namespace: namespace,
+                    basename: path.basename(translation, ".json"),
+                    language: language,
+                    includedInParent: true,
+                    resolved: translation
+                }
+            )
+        }
+    }
+
+    deepFindTranslations(currentPath) {
+        let results = []
+        const translations = fs.readdirSync(
+            currentPath,
             {
                 withFileTypes: true
             }
-        );
-        
-        for (const translation of translations) {
-            if (translation.isDirectory())
-            {
-                logger.error(
-                    `Unsupported depth of translations: '${translation.name}`
-                )
-                continue
-            }
+        )
 
-            this.addDependency(
-                path.join(this.options.rootDir,
-                    config.sourcePath, language, namespace, translation.name),
-                {
-                    namespace: namespace,
-                    basename: translation.name.replace(".json", ""),
-                    language: language,
-                    resolved: path.join(
-                        this.options.rootDir,
-                        config.sourcePath,
-                        language,
-                        namespace,
-                        translation.name
-                    ),
-                    includedInParent: true
-                }
-            );
+        for (const translation of translations) {
+            if (translation.isDirectory()) {
+                const translationTranslations = this.deepFindTranslations(
+                    path.join(currentPath, translation.name)
+                )
+                results = results.concat(translationTranslations)
+                continue
+            } else if (translation.isFile()) {
+                results.push(path.join(currentPath, translation.name))
+            }
         }
+
+        return results
     }
 
     async generate() {
         await this.loadIfNeeded()
-        const { langauge, namespace } = await getLanguageAndNamespace(this.name, this.options.rootDir)
+        const { language, namespace } = await getLanguageAndNamespace(this.name, this.options.rootDir)
         const accumulatedLocale = {}
-
+        const config = await getConfig(this.options.rootDir)
+        
         // Read main
         accumulatedLocale[namespace] = JSON.parse(this.contents)
 
         // Read dependencies
         for (const dep of this.dependencies.values()) {
-            if (!accumulatedLocale.hasOwnProperty(dep.namespace))
-                accumulatedLocale[dep.namespace] = {}
+            let mutableAccumulatedLocale = accumulatedLocale
 
-            accumulatedLocale[dep.namespace][dep.basename] = JSON.parse(
+            if (!mutableAccumulatedLocale.hasOwnProperty(dep.namespace))
+                mutableAccumulatedLocale[dep.namespace] = {}
+            
+            mutableAccumulatedLocale = mutableAccumulatedLocale[dep.namespace]
+
+            const parts = dep.name.replace(
+                path.join(
+                    this.options.rootDir,
+                    config.sourcePath,
+                    language,
+                    namespace
+                ), ''
+            ).split(path.sep)
+            
+            while(parts.length > 1) {
+                const currentPart = parts.shift()
+                if (!currentPart || currentPart === 0)
+                    continue
+                if (!mutableAccumulatedLocale.hasOwnProperty(currentPart))
+                    mutableAccumulatedLocale[currentPart] = {}
+                mutableAccumulatedLocale = mutableAccumulatedLocale[currentPart]
+            }
+
+            mutableAccumulatedLocale[dep.basename] = JSON.parse(
                 fs.readFileSync(dep.resolved)
             )
         }
@@ -89,4 +118,4 @@ module.exports = class LocalizationJSONAsset extends Asset {
             js: code
         }
     }
-};
+}
